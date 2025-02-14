@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug QEMU Kernel (LLDB)",
+            "type": "lldb",
+            "request": "custom",
+            "targetCreateCommands": [
+                "target create /Users/chrisbetancur/Projects/ServerOS/myos.elf", // Path to your OS binary
+                "gdb-remote 10.0.0.119:1234" // Replace with your Raspberry Pi's IP
+            ],
+            "processCreateCommands": [
+                "process connect connect://10.0.0.119:1234" // Replace with your Raspberry Pi's IP
+            ],
+            "sourceMap": {
+                "/home/pi/betama/ServerBuild/": "${workspaceFolder}" // Map source paths
+            },
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "ssh-tunnel" // Optional: Set up SSH tunnel automatically
+        }
+    ]
+}
+
+

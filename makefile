@@ -7,13 +7,36 @@ BUILD_DIR = build
 LINKER_SCRIPT = $(BUILD_DIR)/linker.ld
 TARGET = myos.elf
 CC = arm-linux-gnueabihf-gcc
-CFLAGS = -mcpu=cortex-a7 -fPIC -ffreestanding -O2 -Wall -Wextra
+CFLAGS = -mcpu=cortex-a7 -fPIC -ffreestanding -g -O2 -Wall -Wextra
 LDFLAGS = -ffreestanding -nostdlib -T $(LINKER_SCRIPT)
 
+KERNEL_SRC = $(SRC_DIR)/kernel
+COMMON_SRC = $(SRC_DIR)/common
+
 # Collect source files
-SOURCES = $(wildcard $(SRC_DIR)/*.c) $(wildcard $(SRC_DIR)/*.S)
-OBJECTS = $(SOURCES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
-OBJECTS := $(OBJECTS:$(SRC_DIR)/%.S=$(BUILD_DIR)/%.o)
+#KERNEL_SOURCES = $(wildcard $(KERNEL_SRC)/*.c)
+#KERNEL_ASM_SOURCES = $(wildcard $(KERNEL_SRC)/*.S)
+#COMMON_SOURCES = $(wildcard $(COMMON_SRC)/*.c)
+KERNEL_HEAD = $(INCLUDE_DIR)/kernel
+COMMON_HEAD = $(INCLUDE_DIR)/common
+
+
+#OBJECTS = $(KERNEL_SOURCES:$(KERNEL_SRC)/%.c=$(BUILD_DIR)/%.o)
+
+#OBJECTS += $(KERNEL_ASM_SOURCES:$(KERNEL_SRC)/%.c=$(BUILD_DIR)/%.o)
+#OBJECTS += $(COMMON_SOURCES:$(COMMON_SRC)/%.c=$(BUILD_DIR)/%.o)
+
+KERNEL_SOURCES = $(wildcard $(KERNEL_SRC)/*.c)
+KERNEL_ASM_SOURCES = $(wildcard $(KERNEL_SRC)/*.S)
+COMMON_SOURCES = $(wildcard $(COMMON_SRC)/*.c)
+
+# Generate object files
+OBJECTS = $(patsubst $(KERNEL_SRC)/%.c, $(BUILD_DIR)/kernel_%.o, $(KERNEL_SOURCES))
+OBJECTS += $(patsubst $(COMMON_SRC)/%.c, $(BUILD_DIR)/common_%.o, $(COMMON_SOURCES))
+OBJECTS += $(patsubst $(KERNEL_SRC)/%.S, $(BUILD_DIR)/kernel_%.o, $(KERNEL_ASM_SOURCES))
+
+
+
 
 # Default rule
 all: $(TARGET)
@@ -22,13 +45,17 @@ all: $(TARGET)
 $(TARGET): $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
 
-# Compile C source files
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
-	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
+# Compile C source files from kernel directory
+$(BUILD_DIR)/kernel_%.o: $(KERNEL_SRC)/%.c
+	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -I$(KERNEL_HEAD) -I$(COMMON_HEAD) -c $< -o $@
 
-# Assemble assembly files
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.S
-	$(CC) $(CFLAGS) -c $< -o $@
+# Compile C source files from common directory
+$(BUILD_DIR)/common_%.o: $(COMMON_SRC)/%.c
+	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -I$(KERNEL_HEAD) -I$(COMMON_HEAD) -c $< -o $@
+
+# Assemble assembly files from kernel directory
+$(BUILD_DIR)/kernel_%.o: $(KERNEL_SRC)/%.S
+	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -I$(KERNEL_HEAD) -I$(COMMON_HEAD) -c $< -o $@
 
 # Clean rule
 clean:

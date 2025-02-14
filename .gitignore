@@ -1,0 +1,10 @@
+# Ignore all object files in the build directory
+build/**/*.o
+build/**/*.d
+build/**/*.a
+
+# Ignore build directory completely (except linker script)
+build/*
+
+# But keep the linker script if it's inside build/
+!build/linker.ld
