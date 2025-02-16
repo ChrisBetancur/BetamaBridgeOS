@@ -8,7 +8,8 @@ _start:
     cmp r1, #0
     bne halt
 
-    mov sp, #0x8000
+    //mov sp, #0x8000
+    ldr sp, =__stack_end
 
     ldr r4, =__bss_start
     ldr r9, =__bss_end
