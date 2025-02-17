@@ -7,7 +7,7 @@ BUILD_DIR = build
 LINKER_SCRIPT = $(BUILD_DIR)/linker.ld
 TARGET = myos.elf
 CC = arm-linux-gnueabihf-gcc
-CFLAGS = -mcpu=cortex-a7 -fPIC -ffreestanding -g -O2 -Wall -Wextra
+CFLAGS = -mcpu=cortex-a7 -fPIC -ffreestanding -g -O0 -Wall -Wextra # O0 is used to disable compiler optimizations for the code
 LDFLAGS = -ffreestanding -nostdlib -T $(LINKER_SCRIPT)
 
 KERNEL_SRC = $(SRC_DIR)/kernel

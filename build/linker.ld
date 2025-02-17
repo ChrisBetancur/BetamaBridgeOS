@@ -1,5 +1,7 @@
 ENTRY(_start)
  
+STACK_SIZE = 0x8000; /* 16 KB stack */
+
 SECTIONS
 {
     /* Starts at LOADER_ADDR. */
@@ -38,5 +40,14 @@ SECTIONS
     }
     . = ALIGN(4096); /* align to page size */
     __bss_end = .;
+
+    __stack_start = .;
+    .stack :
+    {
+        . = . + STACK_SIZE;
+    }
+    . = ALIGN(4096); /* align to page size */
+    __stack_end = .;
+
     __end = .;
 }
