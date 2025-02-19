@@ -8,6 +8,12 @@ LINKER_SCRIPT = $(BUILD_DIR)/linker.ld
 TARGET = myos.elf
 CC = arm-linux-gnueabihf-gcc
 CFLAGS = -mcpu=cortex-a7 -fPIC -ffreestanding -g -O0 -Wall -Wextra # O0 is used to disable compiler optimizations for the code
+
+# Detect if running in QEMU
+ifeq ($(QEMU),1)
+    CFLAGS += -DQEMU
+endif
+
 LDFLAGS = -ffreestanding -nostdlib -T $(LINKER_SCRIPT)
 
 KERNEL_SRC = $(SRC_DIR)/kernel
