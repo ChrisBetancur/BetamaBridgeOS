@@ -4,8 +4,7 @@
 #include <common/stdio.h>
 #include <common/list.h>
 #include <string.h>
-
-#include <stddef.h>  // For size_t
+#include <stddef.h>
 #include <kernel/memory.h>
 
 void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags) {

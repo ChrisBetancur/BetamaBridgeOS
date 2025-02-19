@@ -16,7 +16,6 @@ uint32_t get_kernel_memory_size_qemu();
 
 typedef struct page page_t;
 
-
 typedef struct {
     uint32_t present    : 1;  // 1 bit - Page is present in memory
     uint32_t writable   : 1;  // 1 bit - Page is writable

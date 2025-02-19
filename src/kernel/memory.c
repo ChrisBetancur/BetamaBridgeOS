@@ -131,16 +131,6 @@ void split_block(heap_block_t* best_block, uint32_t best_diff, uint32_t size) {
 
     best_block->size = size;
     best_block->is_allocated = 1;
-
-    /*heap_block_t* curr = best_block->next;
-
-    best_block->next = (void*)((uint32_t)best_block + size);
-    best_block->next->prev = best_block;
-    best_block->next->next = curr;
-    best_block->size = best_block->size - size;
-
-    best_block->is_allocated = 1;
-    best_block->next->is_allocated = 0*/
 }
 
 heap_block_t* find_best_fit(uint32_t size) {
