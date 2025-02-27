@@ -35,6 +35,9 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags) {
     puthex(ptr5);
     puts("\n");
 
+    kfree(ptr2);
+    kfree(ptr3);
+
     print_allocated_heap();
 
 }

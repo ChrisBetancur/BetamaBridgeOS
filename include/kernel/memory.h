@@ -69,6 +69,8 @@ static uint32_t heap_size;
 
 void* kmalloc(uint32_t size);
 
+void kfree(void* ptr);
+
 
 // DEBUG FUNCTIONS
 

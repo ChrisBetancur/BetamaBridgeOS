@@ -2,6 +2,7 @@
 #include <common/stdio.h>
 
 extern uint32_t __end;
+extern uint32_t __start;
 
 void zero_memory(uint32_t start, uint32_t num_bytes) {
     uint32_t *ptr32 = (uint32_t *) start; // 32-bit pointer
@@ -39,8 +40,6 @@ DEFINE_LIST_FUNCTIONS(page_t);
 static page_t_list free_pages;
 
 void memory_init() {
-
-
     // The number of pages used by the kernel binary are for the bss, data, rodata, and text sections defined in the linker.ld file
     uint32_t num_pages_used = ((uint32_t) &__end) / PAGE_SIZE; // __end is the end of the kernel binary
     pages = (page_t*) &__end; // BUG FIX?
@@ -54,6 +53,7 @@ void memory_init() {
         pages[i].flags.writable = 0;
         pages[i].flags.executable = 0;
     }
+
     //zero_memory(num_pages_used * PAGE_SIZE, memory_size - num_pages_used * PAGE_SIZE);
     INIT_LIST(free_pages);  
 
@@ -141,7 +141,6 @@ heap_block_t* find_best_fit(uint32_t size) {
     return best_block;
 }
 
-
 void print_allocated_heap() {
     heap_block_t *current = heap_head;
     puts("Heap allocation map:\n");
@@ -176,7 +175,6 @@ void print_allocated_heap() {
 
 
 void* kmalloc(uint32_t size) {
-    
     if (heap_size + size > KERNEL_HEAP_SIZE) {
         // MUST HANDLE OUT OF MEMORY ERROR
         puts("[KERNEL] Out of memory\n");
@@ -227,6 +225,20 @@ void* kmalloc(uint32_t size) {
     heap_size += best_fit->size;
 
     return (void*)best_fit;
-    
 }
 
+void kfree(void* ptr) {
+    heap_block_t* block = (heap_block_t*) ptr;
+    block->is_allocated = 0;
+
+    while (block->prev != NULL && !block->prev->is_allocated) {
+        block->prev->next = block->next;
+        block->prev->size += block->size;
+        block = block->prev;
+    }
+
+    while (block->next != NULL && !block->next->is_allocated) {
+        block->size += block->next->size;
+        block->next = block->next->next;
+    }
+}
