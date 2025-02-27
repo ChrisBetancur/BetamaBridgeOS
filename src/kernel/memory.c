@@ -3,10 +3,6 @@
 
 extern uint32_t __end;
 
-uint32_t get_kernel_memory_size_qemu() {
-    return 1024 * 1024 * 256; // 1GB
-}
-
 void zero_memory(uint32_t start, uint32_t num_bytes) {
     uint32_t *ptr32 = (uint32_t *) start; // 32-bit pointer
     uint32_t words = num_bytes / 4;
@@ -42,26 +38,12 @@ DEFINE_LIST_FUNCTIONS(page_t);
 
 static page_t_list free_pages;
 
-static void heap_init(uint32_t start) {
-    heap_head = (heap_block_t*) start;
-    heap_tail = heap_head;
-    zero_memory(start, sizeof(heap_block_t));
-    heap_head->size = KERNEL_HEAP_SIZE;
-    heap_size = 1;
-}
-
 void memory_init() {
 
-    uint32_t memory_size = 0;
-    #ifdef QEMU
-     memory_size = get_kernel_memory_size_qemu();
-    #else
-    // FUTURE ATAGS IMPLEMENTATION FOR NON EMULATION (HARDWARE)
-    #endif
 
-    uint32_t total_num_pages = memory_size / PAGE_SIZE;
     // The number of pages used by the kernel binary are for the bss, data, rodata, and text sections defined in the linker.ld file
     uint32_t num_pages_used = ((uint32_t) &__end) / PAGE_SIZE; // __end is the end of the kernel binary
+    pages = (page_t*) &__end; // BUG FIX?
 
     int i;
 
@@ -72,13 +54,12 @@ void memory_init() {
         pages[i].flags.writable = 0;
         pages[i].flags.executable = 0;
     }
-;   zero_memory(num_pages_used * PAGE_SIZE, memory_size - num_pages_used * PAGE_SIZE);
+    //zero_memory(num_pages_used * PAGE_SIZE, memory_size - num_pages_used * PAGE_SIZE);
     INIT_LIST(free_pages);  
 
     num_pages = num_pages_used;
 
-    uint32_t heap_start = &__end + (num_pages_used * PAGE_SIZE);
-    heap_init(heap_start);
+    heap_size = 0;
 }
 
 // When we allocate a page, we create the metadata for the page
@@ -87,24 +68,19 @@ void* alloc_page() {
  
     if (page == NULL) {
         // Initialize a new batch of free pages
-        uint32_t batch_size = 1024; // Adjust based on performance testing
-        uint32_t start_index = num_pages + 1; // Calculate the start index of the next batch
+        uint32_t batch_size = 2; // Adjust based on performance testing
+        uint32_t start_index = num_pages; // Calculate the start index of the next batch
         uint32_t end_index = start_index + batch_size;
 
         uint32_t memory_size = 0;
-#ifdef QEMU
-        memory_size = get_kernel_memory_size_qemu();
-#else
-        // FUTURE ATAGS IMPLEMENTATION FOR NON EMULATION (HARDWARE)
-#endif
 
-        uint32_t total_num_pages = memory_size / PAGE_SIZE;
 
-        if (end_index > total_num_pages) end_index = total_num_pages;
+
+        //if (end_index > TOTAL_NUM_PAGES) end_index = TOTAL_NUM_PAGES;
 
         for (uint32_t i = start_index; i < end_index; i++) {
-            pages[i].vaddr_mapped = i * PAGE_SIZE;
-            pages[i].paddr_base = (void*)((&pages[i] - pages) * PAGE_SIZE);
+            pages[i].vaddr_mapped = i * PAGE_SIZE + TOTAL_NUM_PAGES * sizeof(page_t) + __end; // allocate page after page metadata array
+            pages[i].paddr_base = (i * PAGE_SIZE) + TOTAL_NUM_PAGES * sizeof(page_t) + __end;
             pages[i].flags.present = 0;
             pages[i].flags.writable = 0;
             pages[i].flags.executable = 0;
@@ -113,6 +89,7 @@ void* alloc_page() {
         }
 
         page = pop_page_t_list(&free_pages);
+        page->flags.present = 1;
     }
     
     return page->paddr_base;
@@ -121,8 +98,9 @@ void* alloc_page() {
 void split_block(heap_block_t* best_block, uint32_t best_diff, uint32_t size) {
     if (best_diff <= sizeof(heap_block_t) + 16) return;
 
-    heap_block_t* new_block = (heap_block_t*)((uint32_t)best_block + size + sizeof(heap_block_t));
-    new_block->size = best_diff - size - sizeof(heap_block_t); 
+    heap_block_t* new_block = (heap_block_t*)((uint32_t)best_block + size);
+    new_block->size = best_block->size - size; 
+    new_block->is_allocated = 0;
 
     new_block->next = best_block->next;
     if (new_block->next) new_block->next->prev = new_block;
@@ -139,30 +117,71 @@ heap_block_t* find_best_fit(uint32_t size) {
     if (curr == NULL) return NULL;
 
     size += sizeof(heap_block_t);
-    size = ALIGN(size, 16);
+    size = ALIGN(size, 8);
 
     int curr_diff, best_diff = 0x7fffffff;
     
     heap_block_t* best_block = NULL;
 
-
     while (curr && heap_size > 1) {
         curr_diff = curr->size - size;
 
-        if (curr_diff < best_diff && curr->is_allocated == 0) { // Find the first best fit rather the optimal best fit, speed up the search
+        if (curr->size >= size && !curr->is_allocated) {
+
             best_diff = curr_diff;
             best_block = curr;
-            break;
         }
 
         curr = curr->next;
     }
-    split_block(best_block, best_diff, size);
+
+    if (best_diff > sizeof(heap_block_t) + 16)
+        split_block(best_block, best_diff, size);
+
     return best_block;
 }
 
-void* kmalloc(uint32_t size) {
 
+void print_allocated_heap() {
+    heap_block_t *current = heap_head;
+    puts("Heap allocation map:\n");
+    if (current == NULL) {
+        puts("  Heap is empty.\n");
+        return;
+    }
+    
+    uint32_t block_num = 0;
+    while (current != NULL) {
+        puts("  Block ");
+        putdec(block_num++);
+        puts(" - Address: 0x");
+        puthex((uint32_t) current);
+        puts(" | Pages Used: ");
+        putdec(num_pages);
+        puts(" | Header Size: ");
+        putdec(sizeof(heap_block_t));
+        puts(" | Content Size: ");
+        putdec(current->content_size);
+        puts(" | Size: ");
+        putdec(current->size);
+        puts(" bytes | Status: ");
+        if (current->is_allocated) {
+            puts("ALLOCATED\n");
+        } else {
+            puts("FREE\n");
+        }
+        current = current->next;
+    }
+}
+
+
+void* kmalloc(uint32_t size) {
+    
+    if (heap_size + size > KERNEL_HEAP_SIZE) {
+        // MUST HANDLE OUT OF MEMORY ERROR
+        puts("[KERNEL] Out of memory\n");
+        return NULL;
+    }
 
     heap_block_t* best_fit = find_best_fit(size);
 
@@ -170,6 +189,7 @@ void* kmalloc(uint32_t size) {
         uint32_t num_pages_needed = (size + sizeof(heap_block_t) + PAGE_SIZE - 1) / PAGE_SIZE;
         void* pages_alloc[num_pages_needed];
 
+        // MUST IMPLEMENT SAFEGAURD TO PREVENT ALLOCAING MORE THAN THE HEAP MEMORY LIMITS
         for (uint32_t i = 0; i < num_pages_needed; i++) {
             pages_alloc[i] = alloc_page();
             if (pages_alloc[i] == NULL) {
@@ -177,21 +197,36 @@ void* kmalloc(uint32_t size) {
                 return NULL;
             }
         }
-
         best_fit = (heap_block_t*) pages_alloc[0];
+        best_fit->size = num_pages_needed * PAGE_SIZE + sizeof(heap_block_t);
+
+        best_fit->size = ALIGN(best_fit->size, 8);
+
+        uint32_t best_diff = best_fit->size - size;
+        if (best_diff > sizeof(heap_block_t) + 16)
+            split_block(best_fit, best_diff, size + sizeof(heap_block_t));
     }
 
     if (heap_head == NULL) {
-        // HEAP INIT ISSUE, SHOULD NEVER HAPPEN
-        return NULL;
+        heap_head = best_fit;
+        heap_tail = best_fit;
+        best_fit->is_allocated = 1;
+        best_fit->content_size = size;
+        heap_size++;
     }
     else {
         heap_tail->next = best_fit;
+        best_fit->is_allocated = 1;
         best_fit->prev = heap_tail;
         heap_tail = best_fit;
+        best_fit->content_size = size;
         heap_size++;
-    }
 
-    return (void*)(best_fit + 1);
+    } 
+    
+    heap_size += best_fit->size;
+
+    return (void*)best_fit;
     
 }
+

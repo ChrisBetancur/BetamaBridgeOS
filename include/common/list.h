@@ -2,6 +2,7 @@
 #define LIST_H
 
 #include <stddef.h>
+#include <stdio.h>
 
 #define DEFINE_LIST_STRUCTURE(type) \
 typedef struct type##_list_node { \
@@ -27,36 +28,12 @@ void append_##type##_list(type##_list* list, type* node) {\
         node->prev = NULL; \
         node->next = NULL; \
     } else { \
-        list->head->prev = node; \
-        node->next = list->head; \
-        list->head = node; \
-        node->prev = NULL; \
+        list->tail->next = node; \
+        node->prev = list->tail; \
+        node->next = NULL; \
+        list->tail = node; \
     } \
     list->size++; \
-}\
-void append_##type##_list_batch(type##_list* list, type** batch, uint32_t num_nodes) {\
-    if (num_nodes == 0) { \
-        return; \
-    } \
-    \
-    for (uint32_t i = 0; i < num_nodes - 1; i++) { \
-        batch[i]->next = batch[i + 1]; \
-        batch[i+1]->prev = batch[i]; \
-    } \
-    batch[0]->prev = NULL; \
-    batch[num_nodes]->next = NULL; \
-    \
-    if (list->size == 0) { \
-        list->head = batch[0]; \
-        list->tail = batch[num_nodes]; \
-        list->size += num_nodes; \
-    } else { \
-        list->head->prev = batch[num_nodes]; \
-        batch[num_nodes]->next = NULL; \
-        list->head = batch[0]; \
-        list->tail = batch[num_nodes]; \
-        list->size += num_nodes; \
-    } \
 }\
 \
 void push_##type##_list(type##_list* list, type* node) {\
@@ -68,12 +45,17 @@ void push_##type##_list(type##_list* list, type* node) {\
 }\
 \
 type* pop_##type##_list(type##_list* list) {\
-    if (list->size == 0) { \
+    if (list->size == 0 || list->head == NULL) { \
         return NULL; \
     } \
     type* node = list->head; \
     list->head = list->head->next; \
-    list->head->prev = NULL; \
+    if (list->head != NULL) { \
+        list->head->prev = NULL; \
+    } else { \
+        /* List is now empty, so set tail to NULL */ \
+        list->tail = NULL; \
+    } \
     list->size--; \
     return node; \
 }\

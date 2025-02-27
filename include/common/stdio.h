@@ -12,4 +12,6 @@ unsigned char getc();
 
 void puts(const char* str);
 
+void putdec(uint32_t value);
+
 #endif

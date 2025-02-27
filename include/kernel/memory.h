@@ -44,14 +44,22 @@ void zero_memory(uint32_t start, uint32_t num_bytes);
 
 void* alloc_page();
 
-#define KERNEL_HEAP_START ((void*)(&__end + PAGE_SIZE))
+#ifdef QEMU // FUTURE ATAGS IMPLEMENTATION FOR NON EMULATION (HARDWARE) WHEN NOT USING QEMU
+// 256MB
+#define MEMORY_SIZE (1024 * 1024 * 256)
+#define TOTAL_NUM_PAGES (MEMORY_SIZE / PAGE_SIZE)
+#endif
+
 #define KERNEL_HEAP_SIZE (4 * 1024 * 1024) // 4mb
+
+static size_t heap_size;
 
 // struct serves as the metadata for the heap, after the metadata is ini memory, the data of the block is inserted after the metadata
 typedef struct heap_block {
     struct heap_block* next;
     struct heap_block* prev;
     uint32_t size;
+    uint32_t content_size;
     uint32_t is_allocated;
 } heap_block_t;
 
@@ -60,5 +68,12 @@ static heap_block_t* heap_tail;
 static uint32_t heap_size;
 
 void* kmalloc(uint32_t size);
+
+
+// DEBUG FUNCTIONS
+
+void print_allocated_pages(void);
+
+void print_allocated_heap(void);
 
 #endif
