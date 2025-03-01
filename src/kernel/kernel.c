@@ -6,6 +6,14 @@
 #include <string.h>
 #include <stddef.h>
 #include <kernel/memory.h>
+#include <kernel/gpu.h>
+
+
+
+
+
+
+
 
 void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags) {
     (void) r0;
@@ -39,5 +47,21 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags) {
     kfree(ptr3);
 
     print_allocated_heap();
+
+    framebuffer_init();
+    //gpu_putc('F');
+	//framebuffer_set_white();
+	framebuffer_set_background(COLOR_WHITE);
+    char* test = "Hello World!";
+	for (int i = 0; i < 12; i++) {
+		gpu_putc(test[i]);
+	}
+
+    while (1) {
+		//framebuffer_set_white();
+        // Add a small delay to prevent QEMU from hanging
+        for (volatile int i = 0; i < 1000000; i++);
+    }
+	puts("wrong");
 
 }

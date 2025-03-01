@@ -21,15 +21,17 @@ void zero_memory(uint32_t start, uint32_t num_bytes) {
     }
 }
 
+void* memcpy(void *dest, const void *src, size_t n) {
+    // Typecast src and dest addresses to char*
+    char *d = (char *)dest;
+    const char *s = (const char *)src;
 
-#define MIN_BATCH_SIZE 1024
-#define MAX_BATCH_SIZE 65536
+    // Copy n bytes from src to dest
+    while (n--) {
+        *d++ = *s++;
+    }
 
-uint32_t calculate_batch_size(uint32_t total_free_pages) {
-    uint32_t batch_size = total_free_pages / 100; // 1% of total free pages
-    if (batch_size < MIN_BATCH_SIZE) batch_size = MIN_BATCH_SIZE;
-    if (batch_size > MAX_BATCH_SIZE) batch_size = MAX_BATCH_SIZE;
-    return batch_size;
+    return dest;
 }
 
 // Functions won't be public, so no need to define them in the header file

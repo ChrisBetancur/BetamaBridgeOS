@@ -32,7 +32,7 @@ enum
     UART0_ITIP   = (UART0_BASE + 0x84),
     UART0_ITOP   = (UART0_BASE + 0x88),
     UART0_TDR    = (UART0_BASE + 0x8C),
-    MAILBOX      = (0x3F00B880),
+    MAILBOX      = (UART0_BASE + 0xB880),
 };
 
 void uart_init();
