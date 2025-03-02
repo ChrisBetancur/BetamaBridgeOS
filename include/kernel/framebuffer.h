@@ -96,7 +96,6 @@ typedef struct {
     value_buffer_t value_buffer;
 } property_message_tag_t;
 
-
 /**
  * given an array of tags, will send all of the tags given, and will populate that array with the responses.
  * the given array should end with a "null tag" with the proptag field set to 0.

@@ -58,9 +58,9 @@ static void color_background(pixel_t pixel) {
             uint32_t offset = y * fbinfo.pitch + x * BYTES_PER_PIXEL;
 
             // Set RGB values for white (0xFF each)
-            fb[offset]     = pixel.blue;   // Blue component
+            fb[offset]     = pixel.red;   // Blue component
             fb[offset + 1] = pixel.green;   // Green component
-            fb[offset + 2] = pixel.red;   // Red component
+            fb[offset + 2] = pixel.blue;   // Red component
         }
     }
 }
@@ -71,15 +71,23 @@ void framebuffer_set_background(color_t color) {
         return;
     }
 
-    switch (color)
-    {
-    case COLOR_BLACK:
-        color_background(PIXEL_BLACK);
-        break;
-    case COLOR_WHITE:
-        color_background(PIXEL_WHITE);
-        break;
-    default:
-        break;
+    switch (color) {
+        case COLOR_BLACK:
+            color_background(PIXEL_BLACK);
+            break;
+        case COLOR_WHITE:
+            color_background(PIXEL_WHITE);
+            break;
+        case COLOR_RED:
+            color_background(PIXEL_RED);
+            break;
+        case COLOR_GREEN:
+            color_background(PIXEL_GREEN);
+            break;
+        case COLOR_BLUE:
+            color_background(PIXEL_BLUE);
+            break;
+        default:
+            break;
     }
 }

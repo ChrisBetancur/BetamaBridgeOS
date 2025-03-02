@@ -10,6 +10,9 @@ typedef struct pixel {
 
 static const pixel_t PIXEL_WHITE = {0xff, 0xff, 0xff};
 static const pixel_t PIXEL_BLACK = {0x00, 0x00, 0x00};
+static const pixel_t PIXEL_RED   = {0xff, 0x00, 0x00}; // Red
+static const pixel_t PIXEL_GREEN = {0x00, 0xff, 0x00}; // Green
+static const pixel_t PIXEL_BLUE  = {0x00, 0x00, 0xff}; // Blue
 
 typedef enum {
     COLOR_BLACK,

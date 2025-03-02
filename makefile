@@ -7,7 +7,7 @@ BUILD_DIR = build
 LINKER_SCRIPT = $(BUILD_DIR)/linker.ld
 TARGET = myos.elf
 CC = arm-linux-gnueabihf-gcc
-CFLAGS = -mcpu=cortex-a7 -fPIC -ffreestanding -g -O0 -Wall -Wextra # O0 is used to disable compiler optimizations for the code
+CFLAGS = -mcpu=cortex-a7 -march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard -fPIC -ffreestanding -g -O0 -Wall -Wextra # O0 is used to disable compiler optimizations for the code
 
 # Detect if running in QEMU
 ifeq ($(QEMU),1)
