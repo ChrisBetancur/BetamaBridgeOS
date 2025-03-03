@@ -32,3 +32,10 @@ void enable_loopback() {
     cr |= (1 << 7);
     mmio_write(UART0_CR, cr);
 }
+
+int uart_read_input() {
+    if (mmio_read(UART0_FR) & (1 << 4)) { // Check RXFE bit (FIFO empty)
+        return -1;
+    }
+    return (char)mmio_read(UART0_DR);
+}

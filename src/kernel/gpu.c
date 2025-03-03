@@ -25,10 +25,16 @@ void gpu_putc(char c) {
         fbinfo.chars_y--;
     }
 
-    if (c == '\n') {
+    if (c == '\n' || c == '\r') {
         fbinfo.chars_x = 0;
         fbinfo.chars_y++;
         return;
+    }
+
+    if (c == 0x08 || c == 0x7F) {
+        //fbinfo.chars_x--;
+        bmp = font(' ');
+        fbinfo.chars_x--;
     }
 
     for(w = 0; w < CHAR_WIDTH; w++) {
@@ -41,11 +47,17 @@ void gpu_putc(char c) {
         }
     }
 
-    fbinfo.chars_x++;
+    if (c != 0x08 && c != 0x7f)
+        fbinfo.chars_x++;
     if (fbinfo.chars_x > fbinfo.chars_width) {
         fbinfo.chars_x = 0;
         fbinfo.chars_y++;
     }
+}
+
+void gpu_puts(const char* str) {
+    for (size_t i = 0; str[i] != '\0'; i++)
+        gpu_putc(str[i]);
 }
 
 static void color_background(pixel_t pixel) {

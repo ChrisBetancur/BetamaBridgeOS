@@ -58,4 +58,6 @@ static inline void delay(int32_t count)
             : "=r"(count): [count]"0"(count) : "cc");
 }
 
+int uart_read_input();
+
 #endif

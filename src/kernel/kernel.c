@@ -7,7 +7,7 @@
 #include <stddef.h>
 #include <kernel/memory.h>
 #include <kernel/gpu.h>
-
+#include <kernel/cli.h>
 
 void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags) {
     (void) r0;
@@ -21,7 +21,7 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags) {
 
     puts("Memory initialized\n");
 
-    void* ptr  = kmalloc(4);
+    /*void* ptr  = kmalloc(4);
     puthex(ptr);
     puts("\n");
     void* ptr2 = kmalloc(4);
@@ -40,15 +40,16 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags) {
     kfree(ptr2);
     kfree(ptr3);
 
-    print_allocated_heap();
+    print_allocated_heap();*/
 	
     framebuffer_init();
+	gpu_init();
 	framebuffer_set_background(COLOR_GREEN);
 	
-	puts("Hello, kernel World!\n");
+	
+	gpu_puts("Hello, kernel World!\n");
 
-    while (1) {
-        asm volatile("wfi");
-    }
+	poll_cli_input();
+
 
 }

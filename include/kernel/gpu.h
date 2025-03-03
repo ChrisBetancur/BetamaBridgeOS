@@ -25,6 +25,8 @@ typedef enum {
 
 void gpu_putc(char c);
 
+void gpu_puts(const char* str);
+
 void framebuffer_set_background(color_t color);
 
 #endif
