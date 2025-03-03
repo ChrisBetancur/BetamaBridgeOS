@@ -226,7 +226,7 @@ void* kmalloc(uint32_t size) {
     
     heap_size += best_fit->size;
 
-    return (void*)best_fit;
+    return (void*)best_fit + sizeof(heap_block_t);
 }
 
 void kfree(void* ptr) {
