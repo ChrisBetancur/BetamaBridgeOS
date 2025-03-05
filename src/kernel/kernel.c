@@ -8,6 +8,7 @@
 #include <kernel/memory.h>
 #include <kernel/gpu.h>
 #include <kernel/cli.h>
+#include <drivers/sd.h>
 
 typedef struct node {
 	int data;
@@ -40,59 +41,33 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags) {
 
     puts("Memory initialized\n");
 
-    /*void* ptr  = kmalloc(4);
-    puthex(ptr);
-    puts("\n");
-    void* ptr2 = kmalloc(4);
-    puthex(ptr2);
-    puts("\n");
-    void* ptr3 = kmalloc(4);
-    puthex(ptr3);
-    puts("\n");  
-    void* ptr4 = kmalloc(4);
-    puthex(ptr4);
-    puts("\n");
-    void* ptr5 = kmalloc(4);
-    puthex(ptr5);
-    puts("\n");
+	sd_init();
+	puts("SD initialized\n");
 
-    kfree(ptr2);
-    kfree(ptr3);
+	// Test write and read
+	uint8_t write_buffer[512];
+	uint8_t read_buffer[512];
+	
+	// Fill write_buffer with test data (e.g., 0xAA)
+	memset(write_buffer, 0xAA, 512);
 
-    print_allocated_heap();*/
+	// Write to sector 0x1000
+	sd_write_block(0x1000, write_buffer);
 
-	node_t* head = kmalloc(sizeof(struct node));
-	head->data = 99;
-	head->next = NULL;
+	// Read back from sector 0x1000
+	/*sd_read_block(0x1000, read_buffer);
 
-	for (int i = 0; i < 10; i++) {
-		append_node(head, i);
-	}
-
-	node_t* curr = head;
-
-	while (curr != NULL) {
-		puts("<addr: 0x");
-		puthex(curr);
-		puts("| data: ");
-		putdec(curr->data);
-		if (curr->next != NULL) {
-			puts("| next_addr: ");
-			puthex(curr->next);
-		}
-		puts(">");
-		puts("\n");
-
-		curr = curr->next;
-	}
+	// Compare buffers
+	if (memcmp(write_buffer, read_buffer, 512) == 0) {
+		puts("Write verified successfully!\n");
+	} else {
+		puts("Write verification failed!\n");
+	}*/
 	
     framebuffer_init();
 	framebuffer_set_background(COLOR_WHITE);
+
 	
-	
-	gpu_puts("Hello, kernel World!\n");
 
 	poll_cli_input();
-
-
 }

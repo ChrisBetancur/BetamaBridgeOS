@@ -18,6 +18,7 @@ LDFLAGS = -ffreestanding -nostdlib -T $(LINKER_SCRIPT)
 
 KERNEL_SRC = $(SRC_DIR)/kernel
 COMMON_SRC = $(SRC_DIR)/common
+DRIVERS_SRC = $(SRC_DIR)/drivers
 
 # Collect source files
 #KERNEL_SOURCES = $(wildcard $(KERNEL_SRC)/*.c)
@@ -25,6 +26,7 @@ COMMON_SRC = $(SRC_DIR)/common
 #COMMON_SOURCES = $(wildcard $(COMMON_SRC)/*.c)
 KERNEL_HEAD = $(INCLUDE_DIR)/kernel
 COMMON_HEAD = $(INCLUDE_DIR)/common
+DRIVERS_HEAD = $(INCLUDE_DIR)/drivers
 
 
 #OBJECTS = $(KERNEL_SOURCES:$(KERNEL_SRC)/%.c=$(BUILD_DIR)/%.o)
@@ -35,12 +37,13 @@ COMMON_HEAD = $(INCLUDE_DIR)/common
 KERNEL_SOURCES = $(wildcard $(KERNEL_SRC)/*.c)
 KERNEL_ASM_SOURCES = $(wildcard $(KERNEL_SRC)/*.S)
 COMMON_SOURCES = $(wildcard $(COMMON_SRC)/*.c)
+DRIVERS_SOURCES = $(wildcard $(DRIVERS_SRC)/*.c)
 
 # Generate object files
 OBJECTS = $(patsubst $(KERNEL_SRC)/%.c, $(BUILD_DIR)/kernel_%.o, $(KERNEL_SOURCES))
 OBJECTS += $(patsubst $(COMMON_SRC)/%.c, $(BUILD_DIR)/common_%.o, $(COMMON_SOURCES))
 OBJECTS += $(patsubst $(KERNEL_SRC)/%.S, $(BUILD_DIR)/kernel_%.o, $(KERNEL_ASM_SOURCES))
-
+OBJECTS += $(patsubst $(DRIVERS_SRC)/%.c, $(BUILD_DIR)/drivers_%.o, $(DRIVERS_SOURCES))
 
 
 
@@ -53,11 +56,15 @@ $(TARGET): $(OBJECTS)
 
 # Compile C source files from kernel directory
 $(BUILD_DIR)/kernel_%.o: $(KERNEL_SRC)/%.c
-	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -I$(KERNEL_HEAD) -I$(COMMON_HEAD) -c $< -o $@
+	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -I$(KERNEL_HEAD) -I$(DRIVERS_HEAD) -I$(COMMON_HEAD) -c $< -o $@
 
 # Compile C source files from common directory
 $(BUILD_DIR)/common_%.o: $(COMMON_SRC)/%.c
-	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -I$(KERNEL_HEAD) -I$(COMMON_HEAD) -c $< -o $@
+	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -I$(KERNEL_HEAD) -I$(DRIVERS_HEAD) -I$(COMMON_HEAD) -c $< -o $@
+
+# Compile C source files from drivers directory
+$(BUILD_DIR)/drivers_%.o: $(DRIVERS_SRC)/%.c
+	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -I$(KERNEL_HEAD) -I$(DRIVERS_HEAD) -I$(COMMON_HEAD) -c $< -o $@
 
 # Assemble assembly files from kernel directory
 $(BUILD_DIR)/kernel_%.o: $(KERNEL_SRC)/%.S
