@@ -21,7 +21,7 @@ void zero_memory(uint32_t start, uint32_t num_bytes) {
     }
 }
 
-void* memcpy(void *dest, const void *src, size_t n) {
+void* memcpy(void* dest, const void *src, size_t n) {
     // Typecast src and dest addresses to char*
     char *d = (char *)dest;
     const char *s = (const char *)src;
@@ -32,6 +32,25 @@ void* memcpy(void *dest, const void *src, size_t n) {
     }
 
     return dest;
+}
+
+void* memset(void* ptr, int value, size_t num) {
+    unsigned char* curr = (unsigned char*) ptr;
+    for (size_t i = 0; i < num; i++) {
+        curr[i] = value;
+    }
+    return ptr;
+}
+
+int memcmp(const void *ptr1, const void *ptr2, size_t num) {
+    const unsigned char *p1 = (const unsigned char*)ptr1;
+    const unsigned char *p2 = (const unsigned char*)ptr2;
+    for (size_t i = 0; i < num; i++) {
+        if (p1[i] != p2[i]) {
+            return (int)p1[i] - (int)p2[i];
+        }
+    }
+    return 0;
 }
 
 // Functions won't be public, so no need to define them in the header file
