@@ -27,10 +27,10 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags) {
 	setup_fs();
 	mount_sim_fs();
 	
-    //framebuffer_init();
-	//framebuffer_set_background(COLOR_WHITE);
+    framebuffer_init();
+	framebuffer_set_background(COLOR_WHITE);
 
 	
-
-	//poll_cli_input();
+    shell_install();
+	poll_cli_input();
 }

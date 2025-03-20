@@ -1,6 +1,7 @@
 #include <common/stdio.h>
 #include <kernel/uart.h>
 #include <stdarg.h>
+#include <kernel/memory.h>
 
 
 void putc(unsigned char c)
@@ -134,4 +135,76 @@ char* strcat(char* dest, const char* src) {
     }
     
     return dest;
+}
+
+void int_to_ascii(int n, char *buffer) {
+    int i = 0;
+    uint32_t is_negative = 0;
+    
+    if (n < 0) {
+        is_negative = 1;
+        n = -n;
+    }
+    
+    do {
+        buffer[i++] = n % 10 + '0';
+        n /= 10;
+    } while (n > 0);
+    
+    if (is_negative) {
+        buffer[i++] = '-';
+    }
+    
+    buffer[i] = '\0';
+    
+    // Reverse the string
+    int start = 0;
+    int end = i - 1;
+    while (start < end) {
+        char temp = buffer[start];
+        buffer[start] = buffer[end];
+        buffer[end] = temp;
+        start++;
+        end--;
+    }
+}
+
+char** split_str(const char input[], char delimiter, int max_tokens) {
+    int token_count = 0;
+    int len = strlen(input);
+    
+    // Allocate tokens array
+    char** tokens = kmalloc(max_tokens * sizeof(char*));
+    if (!tokens) return NULL;
+
+    int start = 0;
+    int in_token = 0;
+
+    for (int i = 0; i <= len; i++) {
+        if (input[i] == delimiter || input[i] == '\0') {
+            if (in_token && token_count < max_tokens) {
+                int token_len = i - start;
+                
+                // Allocate space for token + null terminator
+                char* token = kmalloc(token_len + 1);
+                
+                // Copy substring
+                memcpy(token, input + start, token_len);
+                token[token_len] = '\0';
+                
+                tokens[token_count++] = token;
+                in_token = 0;
+            }
+            start = i + 1;
+        } else {
+            in_token = 1;
+        }
+    }
+
+    // Terminate array with NULL
+    if (token_count < max_tokens) {
+        tokens[token_count] = NULL;
+    }
+    return tokens;
+
 }

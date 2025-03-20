@@ -22,4 +22,6 @@ int strcmp(const char *s1, const char *s2);
 
 char* strcat(char* dest, const char* src);
 
+char** split_str(const char input[], char delimiter, int max_tokens);
+
 #endif
