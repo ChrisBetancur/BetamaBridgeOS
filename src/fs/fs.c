@@ -87,6 +87,61 @@ static uint32_t allocate_zone(superblock_t* sp) {
     return -1;
 }
 
+char* get_inode_name(uint32_t inode_num) {
+    printf("Current dir id-> %d\n", current_dir_id);
+    if (inode_num == 0) {
+        return "/";
+    }
+
+    uint8_t local_sp[BLOCK_SIZE];
+    uint8_t local_metadata_table[BLOCK_SIZE];
+
+    memcpy(local_sp, sim_read_block(1), BLOCK_SIZE);
+    superblock_t* sp = (superblock_t*)local_sp;
+
+    memcpy(local_metadata_table, sim_read_block(2), BLOCK_SIZE);
+    inode_t* metadata_table = (inode_t*) local_metadata_table;
+
+    uint32_t block_num = metadata_table[current_dir_id].zones[0] << sp->shift_count;
+        
+    uint32_t zone = metadata_table[current_dir_id].zones[0];// NEED A WAY TO CHECK IF ZONE IS FULL?
+
+    uint8_t zone_data[BLOCK_SIZE];
+    memcpy(zone_data, sim_read_block(block_num), BLOCK_SIZE);
+    dir_entry_t *entries = (dir_entry_t *)zone_data;
+
+    int num_entries = BLOCK_SIZE / sizeof(dir_entry_t);
+
+    uint32_t parent_inode_id = 0;
+    for (int k = 0; k < num_entries; k++) {
+        if (strcmp(entries[k].filename, "..") == 0) {
+            parent_inode_id = entries[k].inode_link;
+            break;
+        }
+    }
+
+    block_num = metadata_table[parent_inode_id].zones[0] << sp->shift_count;
+        
+    zone = metadata_table[parent_inode_id].zones[0];// NEED A WAY TO CHECK IF ZONE IS FULL?
+
+    memcpy(zone_data, sim_read_block(block_num), BLOCK_SIZE);
+    entries = (dir_entry_t *)zone_data;
+
+    num_entries = BLOCK_SIZE / sizeof(dir_entry_t);
+
+    for (int k = 0; k < num_entries; k++) {
+        if (entries[k].inode_link == inode_num) {
+            printf("Found inode %d\n", inode_num);
+            return entries[k].filename;
+        }
+    }
+
+
+
+    return NULL;
+
+}
+
 void setup_fs() {
     // Block 0 is reserved for bootblock
         superblock_t sp =  {
@@ -369,13 +424,16 @@ char** list_dir() {
     dir_entry_t *entries = (dir_entry_t *)zone_data;
 
     int num_entries = BLOCK_SIZE / sizeof(dir_entry_t);
-    char** dir_list = kmalloc(num_entries * sizeof(char*));
+    char** dir_list = kmalloc(num_entries * sizeof(char*) + 1);
 
     for (int k = 0; k < num_entries; k++) {
         if (strcmp(entries[k].filename, "") != 0) {
             dir_list[k] = entries[k].filename;
+            dir_list[k + 1] = '\0';
         }
     }
+
+    printf("Expected size=%d\n", num_entries * sizeof(char*) + 1);
 
     return dir_list;
 }
@@ -520,7 +578,7 @@ void mount_sim_fs() {
     current_num_inode = 0;
 
     // Allocate root directory inode
-    allocate_inode(sp, metadata_table, mode, 0, 0, NULL, NULL);
+    /*allocate_inode(sp, metadata_table, mode, 0, 0, NULL, NULL);
     current_dir_id = 0;
 
     create_file("test.txt", "Hello File World!", 17);
@@ -533,7 +591,7 @@ void mount_sim_fs() {
     write_file("test.txt", "Hello File World inside another dir! Updated", 50);
 
     char** dir_list = list_dir();
-    char* data = read_file("test.txt");
+    char* data = read_file("test.txt");*/
     
     
     dump_fs();

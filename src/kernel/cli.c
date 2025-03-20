@@ -1,7 +1,12 @@
 #include <kernel/cli.h>
 #include <common/stdio.h>
+#include <fs/fs.h>
+#include <kernel/framebuffer.h>
+#include <kernel/gpu_utils.h>
 
 uint32_t cmd_index = 0;
+uint32_t current_dir_id; // from fs.h
+char* current_dir_name; // from header
 
 cmd_entry_t cmd_entries[CMD_ENTRIES];
 
@@ -13,14 +18,55 @@ static void echo(void* data) {
     gpu_puts("\n");
 }
 
+static void mkdir(void* data) {
+    create_dir(data);
+}
+
+// TOUCH WILL TEMPORAILTY CREATE FILE WITH PREDETERMINED DATA INSIDE
+static void touch(void* data) {
+    create_file(data, "HEY THERE", 0);
+}
+
+static void ls(void* data) {
+    char** dir_list = list_dir();
+    int i;
+    for (i = 0; dir_list[i] != '\0'; i++) { // MAY BE REASON
+        if (dir_list[i] != "") {
+            gpu_puts(dir_list[i]);
+            gpu_puts("\n");
+        }
+    }
+    char ch_i[2];
+    int_to_ascii(i, ch_i);
+    gpu_puts("Total Items: ");
+    gpu_puts(ch_i);
+    gpu_puts("\n");
+}
+
+static void cd(void* data) {
+    change_dir(data);
+    current_dir_name = get_inode_name(current_dir_id);
+}
+
+static void cat(void* data) {
+    char* file_data = read_file(data);
+    gpu_puts(file_data);
+    gpu_puts("\n");
+}
 
 static cmd_entry_t* get_cmd_entry(char cmd_str[]) {
-    for (int i = 0; i < CMD_ENTRIES; i++) {
+    for (int i = 0; i < cmd_index; i++) {
         if (strcmp(cmd_entries[i].name, cmd_str) == 0) {
             return &cmd_entries[i];
         }
     }
     return NULL;
+}
+
+static void pwd(void* data) {
+    char* dir_name = get_inode_name(current_dir_id);
+    gpu_puts(dir_name);
+    gpu_puts("\n");
 }
 
 void register_cmd(const char* name, cmd_t handler) {
@@ -36,12 +82,16 @@ void register_cmd(const char* name, cmd_t handler) {
 void handle_cmd(char buffer[]) {
     //gpu_puts(buffer);
     // WORK ON SPLITTING STRING
+    size_t len = strlen(buffer);
+    while (len > 0 && (buffer[len-1] == '\n' || buffer[len-1] == '\r')) {
+        buffer[--len] = '\0';
+    }
     char **tuple = split_str(buffer, ' ', 2);
     if (!tuple || !tuple[0]) return;
 
     cmd_entry_t *entry = get_cmd_entry(tuple[0]);
     if (!entry || !entry->handler) {
-        gpu_puts("Command not found\r\n");
+        gpu_puts("\nCommand not found\n");
         return;
     }
 
@@ -52,10 +102,23 @@ void handle_cmd(char buffer[]) {
 
 void shell_install() {
     register_cmd("echo", echo);  // Proper registration with both name and handler
+    register_cmd("mkdir", mkdir);
+    register_cmd("touch", touch);
+    register_cmd("ls", ls);
+    register_cmd("cd", cd);
+    register_cmd("cat", cat);
+    register_cmd("pwd", pwd);
 }
 
 void poll_cli_input() {
-    gpu_puts(CLI_PROMPT);
+
+    char* current_dir_name = get_inode_name(current_dir_id);
+    char* dir_prompt = "";
+    dir_prompt = strcat(dir_prompt, CLI_PROMPT);
+    dir_prompt = strcat(dir_prompt, current_dir_name);
+    gpu_puts(dir_prompt);
+
+
     int ch;
     char buffer[MAX_CMD_SIZE];
     int buf_index = 0;
@@ -70,9 +133,13 @@ void poll_cli_input() {
         }
         if (ch == '\n' || ch == '\r') {
             handle_cmd(buffer);
-            gpu_puts(CLI_PROMPT);
+            memset(dir_prompt, 0, sizeof(dir_prompt));
+            dir_prompt = "";
+            dir_prompt = strcat(dir_prompt, CLI_PROMPT);
+            dir_prompt = strcat(dir_prompt, current_dir_name);
+            printf("dir_prompt: %s\n", dir_prompt);
+            gpu_puts(dir_prompt);
             buf_index = 0;
-            //gpu_puts(buffer);
         }
 
         

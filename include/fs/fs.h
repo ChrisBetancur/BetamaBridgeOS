@@ -106,6 +106,8 @@ typedef struct inode {
     uint32_t file_size;
 } inode_t;
 
+char* get_inode_name(uint32_t inode_num);
+
 #define FILENAME_SIZE 21
 
 typedef struct dir_entry {
@@ -113,7 +115,7 @@ typedef struct dir_entry {
     char filename[FILENAME_SIZE];
 } dir_entry_t;
 
-static uint32_t current_dir_id;
+extern uint32_t current_dir_id;
 static uint32_t current_num_inode; // MAX IS 512
 
 void setup_fs();

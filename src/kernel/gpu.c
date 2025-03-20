@@ -9,6 +9,7 @@ static void write_pixel(uint32_t x, uint32_t y, const pixel_t * pix) {
     memcpy(location, pix, BYTES_PER_PIXEL);
 }
 
+
 void gpu_putc(char c) {
     uint8_t w,h;
     uint8_t mask;
@@ -21,9 +22,17 @@ void gpu_putc(char c) {
         for (i = 0; i < num_rows-1; i++)
             memcpy(fbinfo.buf + fbinfo.pitch*i*CHAR_HEIGHT, fbinfo.buf + fbinfo.pitch*(i+1)*CHAR_HEIGHT, fbinfo.pitch * CHAR_HEIGHT);
         // zero out the last row
-        zero_memory(fbinfo.buf + fbinfo.pitch*i*CHAR_HEIGHT,fbinfo.pitch * CHAR_HEIGHT);
+        //zero_memory(fbinfo.buf + fbinfo.pitch*i*CHAR_HEIGHT,fbinfo.pitch * CHAR_HEIGHT);
+
+            // Fill the last row with the current background color.
+        for (uint32_t y = (num_rows - 1) * CHAR_HEIGHT; y < num_rows * CHAR_HEIGHT; y++) {
+            for (uint32_t x = 0; x < fbinfo.width; x++) {
+                write_pixel(x, y, &fbinfo.current_bg);
+            }
+        }
         fbinfo.chars_y--;
     }
+
 
     if (c == '\n' || c == '\r') {
         fbinfo.chars_x = 0;
@@ -82,21 +91,25 @@ void framebuffer_set_background(color_t color) {
         // Framebuffer not initialized
         return;
     }
-
     switch (color) {
         case COLOR_BLACK:
+            fbinfo.current_bg = PIXEL_BLACK;
             color_background(PIXEL_BLACK);
             break;
         case COLOR_WHITE:
+            fbinfo.current_bg = PIXEL_WHITE;
             color_background(PIXEL_WHITE);
             break;
         case COLOR_RED:
+            fbinfo.current_bg = PIXEL_RED;
             color_background(PIXEL_RED);
             break;
         case COLOR_GREEN:
+            fbinfo.current_bg = PIXEL_GREEN;
             color_background(PIXEL_GREEN);
             break;
         case COLOR_BLUE:
+            fbinfo.current_bg = PIXEL_BLUE;
             color_background(PIXEL_BLUE);
             break;
         default:

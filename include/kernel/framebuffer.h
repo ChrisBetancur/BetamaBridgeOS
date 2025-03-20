@@ -103,6 +103,26 @@ typedef struct {
  */
 int send_messages(property_message_tag_t * tags);
 
+typedef struct pixel {
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+} pixel_t;
+
+static const pixel_t PIXEL_WHITE = {0xff, 0xff, 0xff};
+static const pixel_t PIXEL_BLACK = {0x00, 0x00, 0x00};
+static const pixel_t PIXEL_RED   = {0xff, 0x00, 0x00}; // Red
+static const pixel_t PIXEL_GREEN = {0x00, 0xff, 0x00}; // Green
+static const pixel_t PIXEL_BLUE  = {0x00, 0x00, 0xff}; // Blue
+
+typedef enum {
+    COLOR_BLACK,
+    COLOR_WHITE,
+    COLOR_RED,
+    COLOR_GREEN,
+    COLOR_BLUE
+} color_t;
+
 typedef struct framebuffer_info {
     uint32_t width;
     uint32_t height;
@@ -113,6 +133,7 @@ typedef struct framebuffer_info {
     uint32_t chars_height;
     uint32_t chars_x;
     uint32_t chars_y;
+    pixel_t current_bg;
 } framebuffer_info_t;
 
 extern framebuffer_info_t fbinfo;
