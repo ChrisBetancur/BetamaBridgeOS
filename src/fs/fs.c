@@ -129,10 +129,15 @@ char* get_inode_name(uint32_t inode_num) {
 
     num_entries = BLOCK_SIZE / sizeof(dir_entry_t);
 
+    char* name = NULL;
+
     for (int k = 0; k < num_entries; k++) {
         if (entries[k].inode_link == inode_num) {
-            printf("Found inode %d\n", inode_num);
-            return entries[k].filename;
+            char* name = kmalloc(strlen(entries[k].filename) + 2);
+            memcpy(name, entries[k].filename, strlen(entries[k].filename));
+            name[strlen(entries[k].filename)] = '/';
+            name[strlen(entries[k].filename) + 1] = '\0';
+            return name;
         }
     }
 
@@ -405,6 +410,55 @@ void create_dir(const char* dirname) {
     sim_write_block(entries, block_num);
 }
 
+char** list_dir_addr() {
+    uint8_t local_sp[BLOCK_SIZE];
+    uint8_t local_metadata_table[BLOCK_SIZE];
+
+    memcpy(local_sp, sim_read_block(1), BLOCK_SIZE);
+    superblock_t* sp = (superblock_t*)local_sp;
+
+    memcpy(local_metadata_table, sim_read_block(2), BLOCK_SIZE);
+    inode_t* metadata_table = (inode_t*) local_metadata_table;
+
+    uint32_t block_num = metadata_table[current_dir_id].zones[0] << sp->shift_count;
+        
+    uint32_t zone = metadata_table[current_dir_id].zones[0];// NEED A WAY TO CHECK IF ZONE IS FULL?
+
+    uint8_t zone_data[BLOCK_SIZE];
+    memcpy(zone_data, sim_read_block(block_num), BLOCK_SIZE);
+    dir_entry_t *entries = (dir_entry_t *)zone_data;
+
+    int num_entries = BLOCK_SIZE / sizeof(dir_entry_t);
+    char** dir_list = kmalloc(num_entries * sizeof(char*) + 1);
+
+    for (int k = 0; k < num_entries; k++) {
+        if (strcmp(entries[k].filename, "") != 0) {
+            block_num = metadata_table[entries[k].inode_link].zones[0] << sp->shift_count;
+            void* read_addr = sim_read_block(block_num);
+            printf("Addr: %x\n", (unsigned int)read_addr);
+
+            // Allocate memory for the address string.
+            char* addr_str = (char*)kmalloc(11);
+            if (addr_str == NULL) {
+                // Handle allocation error
+                return;
+            }
+
+            pointer_to_hex_str(read_addr, addr_str, 11);
+
+            dir_list[k] = addr_str;
+
+            printf("Entry inode link %d\n", entries[k].inode_link);
+            // Correctly print the string stored in dir_list[k]
+            printf("Before: %s\n", dir_list[k]);
+        }
+    }
+
+    printf("Expected size=%d\n", num_entries * sizeof(char*) + 1);
+
+    return dir_list;
+}
+
 char** list_dir() {
     uint8_t local_sp[BLOCK_SIZE];
     uint8_t local_metadata_table[BLOCK_SIZE];
@@ -428,10 +482,15 @@ char** list_dir() {
 
     for (int k = 0; k < num_entries; k++) {
         if (strcmp(entries[k].filename, "") != 0) {
-            dir_list[k] = entries[k].filename;
-            dir_list[k + 1] = '\0';
+            size_t len = strlen(entries[k].filename) + 1; // +1 for '\0'
+            dir_list[k] = kmalloc(len + 1);
+
+            memcpy(dir_list[k], entries[k].filename, len);
+            printf("Name-> %s\n", dir_list[k]);
         }
     }
+
+    dir_list[num_entries] = NULL;
 
     printf("Expected size=%d\n", num_entries * sizeof(char*) + 1);
 

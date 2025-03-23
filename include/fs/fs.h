@@ -126,6 +126,8 @@ void create_file(const char* filename, const char* data, size_t data_size);
 
 void create_dir(const char* dirname);
 
+char** list_dir_addr();
+
 char** list_dir();
 
 void change_dir(const char* dirname);

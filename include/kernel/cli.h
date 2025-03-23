@@ -8,8 +8,6 @@
 
 #define CLI_PROMPT "betama@rasberrypi:~"
 
-extern char* current_dir_name;
-
 #define MAX_CMD_SIZE 20
 
 // all commands must pass data param

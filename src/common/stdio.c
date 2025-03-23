@@ -137,6 +137,85 @@ char* strcat(char* dest, const char* src) {
     return dest;
 }
 
+char* hex_to_string(const char* hex_str) {
+    size_t len = strlen(hex_str);
+    if (len % 2 != 0) {
+        // Hex string should have an even number of characters
+        return NULL;
+    }
+
+    size_t char_len = len / 2;
+    char* result = (char*)kmalloc(char_len + 1); // +1 for the null terminator
+    if (result == NULL) {
+        // Memory allocation failed
+        return NULL;
+    }
+
+    for (size_t i = 0, j = 0; i < len; i += 2, j++) {
+        unsigned char high = hex_str[i];
+        unsigned char low = hex_str[i + 1];
+
+        // Convert high nibble
+        if (high >= '0' && high <= '9') {
+            high -= '0';
+        } else if (high >= 'a' && high <= 'f') {
+            high -= 'a' - 10;
+        } else if (high >= 'A' && high <= 'F') {
+            high -= 'A' - 10;
+        } else {
+            // Invalid character
+            kfree(result);
+            return NULL;
+        }
+
+        // Convert low nibble
+        if (low >= '0' && low <= '9') {
+            low -= '0';
+        } else if (low >= 'a' && low <= 'f') {
+            low -= 'a' - 10;
+        } else if (low >= 'A' && low <= 'F') {
+            low -= 'A' - 10;
+        } else {
+            // Invalid character
+            kfree(result);
+            return NULL;
+        }
+
+        result[j] = (high << 4) | low;
+    }
+    result[char_len] = '\0'; // Null-terminate the string
+
+    return result;
+}
+
+void pointer_to_hex_str(void* ptr, char* buf, size_t buf_size) {
+    // Check that the buffer is big enough
+    if (buf_size < 11) {
+        return;
+    }
+    
+    // Cast pointer to an unsigned integer type
+    uintptr_t addr = (uintptr_t)ptr;
+    const char hex_digits[] = "0123456789ABCDEF";
+    
+    // Write the "0x" prefix
+    buf[0] = '0';
+    buf[1] = 'x';
+    
+    // Process 8 hex digits for 32-bit address.
+    // For 64-bit, you would need 16 digits and adjust accordingly.
+    for (int i = 0; i < 8; i++) {
+        // Shift to get the corresponding nibble (4 bits)
+        int shift = (7 - i) * 4;
+        int nibble = (addr >> shift) & 0xF;
+        buf[i + 2] = hex_digits[nibble];
+    }
+    
+    buf[10] = '\0'; // Null-terminate the string
+}
+
+
+
 void int_to_ascii(int n, char *buffer) {
     int i = 0;
     uint32_t is_negative = 0;
