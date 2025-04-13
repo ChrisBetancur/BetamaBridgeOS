@@ -3,6 +3,7 @@
 void uart_init()
 {
 
+    printf("Initializing UART...\n");
     mmio_write(UART0_CR, 0x00000000);
 
     mmio_write(GPPUD, 0x00000000);
@@ -25,6 +26,7 @@ void uart_init()
             (1 << 7) | (1 << 8) | (1 << 9) | (1 << 10));
 
     mmio_write(UART0_CR, (1 << 0) | (1 << 8) | (1 << 9));
+    printf("UART initialization complete...\n");
 }
 
 void enable_loopback() {

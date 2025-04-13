@@ -7,7 +7,6 @@
 // data must be of length BLOCK_SIZE, if smaller, pad it with 0s
 static void sim_write_block(void* data, uint32_t block_num) {
     uint32_t write_addr = FS_START_ADDR + (block_num * BLOCK_SIZE);
-    printf("Writing block %d to addr=%x\n", block_num, write_addr);
 
     void* sim_disk = write_addr;
 
@@ -18,7 +17,6 @@ static void sim_write_block(void* data, uint32_t block_num) {
 
 static void* sim_read_block(uint32_t block_num) {
     uint32_t read_addr = FS_START_ADDR + (block_num * BLOCK_SIZE);
-    printf("Reading block %d from addr=%x\n", block_num, read_addr);
 
     return (void*) read_addr;
 }
@@ -26,11 +24,11 @@ static void* sim_read_block(uint32_t block_num) {
 #endif
 
 static void log_inode(superblock_t* sb, inode_t* inode) {
-    printf("Inode %x:\n", *inode);
-    printf("  Mode: 0x%x\n", inode->mode);
-    printf("  File Size: %d\n", inode->file_size);
-    printf("  Num Links: %d\n", inode->num_links);
-    printf("  Zones: { 0x%x, 0x%x, 0x%x }\n",
+    printf("Inode Address %x:\n", inode);
+    printf("Mode: 0x%x\n", inode->mode);
+    printf("File Size: %d\n", inode->file_size);
+    printf("Num Links: %d\n", inode->num_links);
+    printf("Zones: { 0x%x, 0x%x, 0x%x }\n",
         inode->zones[0],
         inode->zones[1],
         inode->zones[2]);
@@ -88,7 +86,6 @@ static uint32_t allocate_zone(superblock_t* sp) {
 }
 
 char* get_inode_name(uint32_t inode_num) {
-    printf("Current dir id-> %d\n", current_dir_id);
     if (inode_num == 0) {
         return "/";
     }
@@ -148,8 +145,10 @@ char* get_inode_name(uint32_t inode_num) {
 }
 
 void setup_fs() {
+    printf("Setting up filesystem...\n");
     // Block 0 is reserved for bootblock
-        superblock_t sp =  {
+    printf("Setting up superblock...\n");
+    superblock_t sp =  {
         .fs_size = FS_SIZE,
         .num_inodes = MAX_INODES,
         .num_inode_bitmap_blocks = 0,
@@ -168,9 +167,29 @@ void setup_fs() {
         .version = 1,
     };
 
+    printf("---------------------------\n");
+    printf("Superblock:\n");
+    printf("  fs_size: %d\n", sp.fs_size);
+    printf("  num_inodes: %d\n", sp.num_inodes);
+    printf("  num_inode_bitmap_blocks: %d\n", sp.num_inode_bitmap_blocks);
+    printf("  num_zone_bitmap_blocks: %d\n", sp.num_zone_bitmap_blocks);
+    printf("  num_zone_per_block: %d\n", sp.num_zone_per_block);
+    printf("  block_size: %d\n", sp.block_size);
+    printf("  shift_count: %d\n", sp.shift_count);
+    printf("  first_free_inode: %d\n", sp.first_free_inode);
+    printf("  first_data_zone: %d\n", sp.first_data_zone);
+    printf("  root_inode: %d\n", sp.root_inode);
+    printf("  major_device: %d\n", sp.major_device);
+    printf("  minor_device: %d\n", sp.minor_device);
+    printf("  magic: 0x%x\n", sp.magic);
+    printf("  version: %d\n", sp.version);
+    printf("---------------------------\n");
+    printf("Setting up inode bitmap...\n");
+
     set_bit(sp.zone_bitmap, 0); // blocks 1-2 = zone 1
     
 
+    printf("Setting up inode metadata table...\n");
     inode_t* metadata_table = kmalloc(MAX_INODES * sizeof(inode_t));
 
     for (int i = 0; i < MAX_INODES; i++) {
@@ -182,11 +201,10 @@ void setup_fs() {
 
     set_bit(sp.zone_bitmap, 1); // blocks 3-4 = zone 2
 
+    printf("Writing superblock to block 1...\n");
+    printf("Writing inode metadata table to block 2...\n");
     sim_write_block(&sp, 1);
     sim_write_block(metadata_table, 2);
-
-    //superblock_t* sp = (superblock_t*) sim_read_block(1);
-    //inode_t* metadata_table = (inode_t*) sim_read_block(2);
 }
 
 static void allocate_inode (
@@ -198,7 +216,6 @@ static void allocate_inode (
         void* data, 
         size_t data_size) {
 
-    printf("Allocating node\n");
     set_bit(sp->inode_bitmap, inode_num);
     metadata_table[inode_num].mode = mode;
     metadata_table[inode_num].file_size = 0;
@@ -211,7 +228,6 @@ static void allocate_inode (
         metadata_table[inode_num].zones[0] = allocate_zone(sp); // allocate only one zone, allocate more if more inodes are linekd to dire
         metadata_table[inode_num].num_links = 2;
         uint32_t block_num = metadata_table[inode_num].zones[0] << sp->shift_count;
-        printf("Directory zone %d\n", metadata_table[inode_num].zones[0]);
         
         memcpy(local_entries, sim_read_block(block_num), BLOCK_SIZE);
         dir_entry_t* entries = (dir_entry_t*)local_entries;
@@ -231,7 +247,6 @@ static void allocate_inode (
         sim_write_block(entries, block_num);
     }
     else if (mode & I_REGULAR) {
-        printf("File writing->\n");
         metadata_table[inode_num].num_links = 1;
 
         //uint32_t num_zones = CEILING((BLOCK_SIZE * 2), data_size);
@@ -245,7 +260,6 @@ static void allocate_inode (
 
         for (int i = 0; i < num_zones; i++) {
             metadata_table[inode_num].zones[i] = allocate_zone(sp);
-            printf("Regular zone %d\n", metadata_table[inode_num].zones[i]);
             uint32_t block_num = metadata_table[inode_num].zones[i] << sp->shift_count;
 
             uint32_t chunk_size = (data_size - bytes_written) > (BLOCK_SIZE * 2) 
@@ -371,6 +385,13 @@ void create_file(const char* filename, const char* data, size_t data_size) {
 
     sim_write_block(metadata_table, 2);
     sim_write_block(entries, block_num);
+
+    // logs detailing how the file was written
+    printf("--- File Write Log ---\n");
+        printf("File %s written to inode %d\n", filename, current_num_inode);
+        log_inode(sp, &metadata_table[current_num_inode]);
+    
+        printf("-----------------------\n");
 }
 
 void create_dir(const char* dirname) {
@@ -408,6 +429,12 @@ void create_dir(const char* dirname) {
 
     sim_write_block(metadata_table, 2);
     sim_write_block(entries, block_num);
+
+    //logs detailing how the directory was created
+    printf("--- Directory Creation Log ---\n");
+        printf("Directory %s created with inode %d\n", dirname, current_num_inode);
+        log_inode(sp, &metadata_table[current_num_inode]);
+        printf("-------------------------------\n");
 }
 
 char** list_dir_addr() {
@@ -435,7 +462,6 @@ char** list_dir_addr() {
         if (strcmp(entries[k].filename, "") != 0) {
             block_num = metadata_table[entries[k].inode_link].zones[0] << sp->shift_count;
             void* read_addr = sim_read_block(block_num);
-            printf("Addr: %x\n", (unsigned int)read_addr);
 
             // Allocate memory for the address string.
             char* addr_str = (char*)kmalloc(11);
@@ -447,14 +473,8 @@ char** list_dir_addr() {
             pointer_to_hex_str(read_addr, addr_str, 11);
 
             dir_list[k] = addr_str;
-
-            printf("Entry inode link %d\n", entries[k].inode_link);
-            // Correctly print the string stored in dir_list[k]
-            printf("Before: %s\n", dir_list[k]);
         }
     }
-
-    printf("Expected size=%d\n", num_entries * sizeof(char*) + 1);
 
     return dir_list;
 }
@@ -486,13 +506,10 @@ char** list_dir() {
             dir_list[k] = kmalloc(len + 1);
 
             memcpy(dir_list[k], entries[k].filename, len);
-            printf("Name-> %s\n", dir_list[k]);
         }
     }
 
     dir_list[num_entries] = NULL;
-
-    printf("Expected size=%d\n", num_entries * sizeof(char*) + 1);
 
     return dir_list;
 }
@@ -574,6 +591,8 @@ void write_file(const char* filename, const char* data, size_t data_size) {
             }
         }
     }
+    
+
 }
 
 void* read_file(const char* filename) {
@@ -626,6 +645,9 @@ void mount_sim_fs() {
     uint8_t local_sp[BLOCK_SIZE];
     uint8_t local_metadata_table[BLOCK_SIZE];
 
+    printf("Mounting FS...\n");
+
+    printf("Setting up Superblock...\n");
     memcpy(local_sp, sim_read_block(1), BLOCK_SIZE);
     superblock_t* sp = (superblock_t*)local_sp;
 
@@ -636,24 +658,12 @@ void mount_sim_fs() {
 
     current_num_inode = 0;
 
-    // Allocate root directory inode
-    /*allocate_inode(sp, metadata_table, mode, 0, 0, NULL, NULL);
-    current_dir_id = 0;
-
-    create_file("test.txt", "Hello File World!", 17);
-    create_file("test2.txt", "Hello File World 2!", 19);
-
-    create_dir("test_dir");
-    change_dir("test_dir");
+    printf("Mounting FS...\n");
     
-    create_file("test.txt", "Hello File World inside another dir!", 17);
-    write_file("test.txt", "Hello File World inside another dir! Updated", 50);
-
-    char** dir_list = list_dir();
-    char* data = read_file("test.txt");*/
-    
-    
+    printf("Dumping FS...\n");
     dump_fs();
 
     //printf("\nData: %s\n", data);
+
+    printf("FS mounted...\n\n");
 }

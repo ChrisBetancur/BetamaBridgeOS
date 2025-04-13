@@ -23,23 +23,18 @@ static void mkdir(void* data) {
 
 // TOUCH WILL TEMPORAILTY CREATE FILE WITH PREDETERMINED DATA INSIDE
 static void touch(void* data) {
-    create_file(data, "HEY THERE", 0);
+    create_file(data, "", 0);
 }
 
 static void ls(void* data) {
     char** dir_list = list_dir();
-    printf("dir_list: %s\n", dir_list[0]);
     char** dir_list_addr = list_dir_addr();
-    printf("dir_list: %s\n", dir_list[0]); /// FIX THIS
 
     int i;
-    for (i = 0; dir_list[i] != NULL; i++) {
-        printf("address-> %s\n", dir_list_addr[i]);
+    for (i = 0; dir_list[i] != NULL || dir_list[i] == ""; i++) { // || "" is a temp fix, don't know where the bug is coming from
         gpu_puts(dir_list_addr[i]);
         gpu_puts(" ");
-        printf("index %d\n", i);
         gpu_puts(dir_list[i]);
-        printf("Name %s\n", dir_list[i]);
         gpu_puts("\n");
     }
     char ch_i[2];
@@ -47,6 +42,55 @@ static void ls(void* data) {
     gpu_puts("Total Items: ");
     gpu_puts(ch_i);
     gpu_puts("\n");
+}
+
+static void write(void* data) {
+    char** tuple = split_str((char*)data, ' ', 2);
+
+    char** dir_list = list_dir();
+
+    int i;
+    for (i = 0; dir_list[i] != NULL; i++) {
+        if (strcmp(dir_list[i], tuple[0]) == 0) {
+            break;
+        }
+    }
+    
+    if (dir_list[i] == NULL) {
+        //gpu_puts("File not found\n");
+        create_file(tuple[0], tuple[1], strlen(tuple[1]));
+        gpu_puts("File written\n");
+        gpu_puts("File name: ");
+        gpu_puts(tuple[0]);
+        gpu_puts("\n");
+        gpu_puts("Data: ");
+        gpu_puts(tuple[1]);
+        gpu_puts("\n");
+        gpu_puts("Data size: ");
+        char ch_i[2];
+        int_to_ascii(strlen(tuple[1]), ch_i);
+        gpu_puts(ch_i);
+        gpu_puts("\n");
+
+        return;
+    }
+
+    /*write_file(dir_list[i], tuple[1], strlen(tuple[1]));
+
+    gpu_puts("File written\n");
+    gpu_puts("File name: ");
+    gpu_puts(dir_list[i]);
+    gpu_puts("\n");
+    gpu_puts("Data: ");
+    gpu_puts(tuple[1]);
+    gpu_puts("\n");
+    gpu_puts("Data size: ");
+    char ch_i[2];
+    int_to_ascii(strlen(tuple[1]), ch_i);
+    gpu_puts(ch_i);
+    gpu_puts("\n");*/
+
+    gpu_puts("Currently Unable rewrite to a file...\n");
 }
 
 static void cd(void* data) {
@@ -68,7 +112,6 @@ static void pwd(void* data) {
 
 static cmd_entry_t* get_cmd_entry(char cmd_str[]) {
     for (int i = 0; i < cmd_index; i++) {
-        printf("cmd_entries[i].name: %s, cmd_str[]=%s\n", cmd_entries[i].name, cmd_str);
         if (strcmp(cmd_entries[i].name, cmd_str) == 0) {
             return &cmd_entries[i];
         }
@@ -84,8 +127,6 @@ void register_cmd(const char* name, cmd_t handler) {
     cmd_index++;
 }
 
-
-
 void handle_cmd(char buffer[]) {
     //gpu_puts(buffer);
     // WORK ON SPLITTING STRING
@@ -94,6 +135,7 @@ void handle_cmd(char buffer[]) {
         buffer[--len] = '\0';
     }
     char **tuple = split_str(buffer, ' ', 2);
+
     if (!tuple || !tuple[0]) return;
 
     cmd_entry_t *entry = get_cmd_entry(tuple[0]);
@@ -101,8 +143,7 @@ void handle_cmd(char buffer[]) {
         gpu_puts("\nCommand not found\n");
         return;
     }
-
-    // Pass remaining arguments (if any)
+    
     char* args = tuple[1] ? tuple[1] : "";
     entry->handler(args);
 }
@@ -115,6 +156,7 @@ void shell_install() {
     register_cmd("cd", cd);
     register_cmd("cat", cat);
     register_cmd("pwd", pwd);
+    register_cmd("write", write);
 }
 
 void poll_cli_input() {
@@ -125,7 +167,6 @@ void poll_cli_input() {
     dir_prompt = strcat(dir_prompt, CLI_PROMPT);
     dir_prompt = strcat(dir_prompt, current_dir_name);
     gpu_puts(dir_prompt);
-
 
     int ch;
     char buffer[MAX_CMD_SIZE];
@@ -140,7 +181,6 @@ void poll_cli_input() {
         
         }
         if (ch == '\n' || ch == '\r') {
-            printf("buffer: %s\n", buffer);
             handle_cmd(buffer);
             memset(dir_prompt, 0, sizeof(dir_prompt));
             dir_prompt = "";

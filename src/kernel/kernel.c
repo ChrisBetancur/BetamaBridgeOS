@@ -18,12 +18,8 @@ void kernel_main(uint32_t r0, uint32_t r1, uint32_t atags) {
 
     uart_init();
 
-    puts("Hello, kernel World!\n");
     memory_init();
 
-    puts("Memory initialized\n");
-
-	//demo_write();
 	setup_fs();
 	mount_sim_fs();
 	

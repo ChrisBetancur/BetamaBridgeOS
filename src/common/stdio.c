@@ -260,23 +260,34 @@ char** split_str(const char input[], char delimiter, int max_tokens) {
     int in_token = 0;
 
     for (int i = 0; i <= len; i++) {
-        if (input[i] == delimiter || input[i] == '\0') {
-            if (in_token && token_count < max_tokens) {
-                int token_len = i - start;
+        if ((input[i] == delimiter || input[i] == '\0') && token_count < max_tokens) {
+            int token_len = i - start;
                 
                 // Allocate space for token + null terminator
-                char* token = kmalloc(token_len + 1);
+            char* token = kmalloc(token_len + 1);
                 
-                // Copy substring
-                memcpy(token, input + start, token_len);
-                token[token_len] = '\0';
+            // Copy substring
+            memcpy(token, input + start, token_len);
+            token[token_len] = '\0';
                 
-                tokens[token_count++] = token;
-                in_token = 0;
-            }
+            tokens[token_count++] = token;
+            in_token = 0;
+            //}
             start = i + 1;
-        } else {
-            in_token = 1;
+
+            if(input[i] == '\0') {
+                break;
+            }
+
+            if (token_count == max_tokens - 1) {
+                int remaining_len = len - start;
+                char* last_token = kmalloc(remaining_len + 1);
+                memcpy(last_token, input + start, remaining_len);
+                last_token[remaining_len] = '\0';
+                tokens[token_count++] = last_token;
+                break;
+            }
+
         }
     }
 

@@ -62,9 +62,36 @@ DEFINE_LIST_FUNCTIONS(page_t);
 static page_t_list free_pages;
 
 void memory_init() {
+    printf("\nInitializing memory...\n");
     // The number of pages used by the kernel binary are for the bss, data, rodata, and text sections defined in the linker.ld file
     uint32_t num_pages_used = ((uint32_t) &__end) / PAGE_SIZE; // __end is the end of the kernel binary
     pages = (page_t*) &__end; // BUG FIX?
+
+    printf("---------------------------\n");
+    printf("Kernel binary size: %d bytes\n", (uint32_t) &__end);
+    printf("Kernel binary size: %d pages\n", num_pages_used);
+    printf("Kernel start address: 0x%x\n", (uint32_t) &__start);
+    printf("Kernel end address: 0x%x\n", (uint32_t) &__end);
+    printf("---------------------------\n");
+
+    printf("\n");
+
+    printf("---------------------------\n");
+    printf("Kernel page metadata size: %d bytes\n", TOTAL_NUM_PAGES * sizeof(page_t));
+    printf("Kernel page metadata size: %d pages\n", TOTAL_NUM_PAGES);
+    printf("Kernel page metadata start address: 0x%x\n", (uint32_t) &__end);
+    printf("Kernel page metadata end address: 0x%x\n", (uint32_t) &__end + TOTAL_NUM_PAGES * sizeof(page_t));
+    printf("---------------------------\n");
+
+    printf("\n");
+
+    printf("---------------------------\n");
+    printf("Kernel heap size: %d bytes\n", KERNEL_HEAP_SIZE);
+    printf("Kernel heap size: %d pages\n", KERNEL_HEAP_SIZE / PAGE_SIZE);
+    printf("Kernel heap start address: 0x%x\n", (uint32_t) &__end + TOTAL_NUM_PAGES * sizeof(page_t));
+    printf("Kernel heap end address: 0x%x\n", (uint32_t) &__end + TOTAL_NUM_PAGES * sizeof(page_t) + KERNEL_HEAP_SIZE);
+    printf("---------------------------\n");
+    printf("\n");
 
     int i;
 
@@ -82,6 +109,8 @@ void memory_init() {
     num_pages = num_pages_used;
 
     heap_size = 0;
+
+    printf("Kernel memory initialization complete...\n");
 }
 
 // When we allocate a page, we create the metadata for the page

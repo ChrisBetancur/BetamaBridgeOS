@@ -8,7 +8,7 @@
 
 #define CLI_PROMPT "betama@rasberrypi:~"
 
-#define MAX_CMD_SIZE 20
+#define MAX_CMD_SIZE 25
 
 // all commands must pass data param
 typedef void (*cmd_t) (void* data);
@@ -19,7 +19,7 @@ typedef struct {
 } cmd_entry_t;
 
 // CURRENTLY COMMANDS SHOULD ONLY BE ONE WORD AND/OR ONE INPUT BESIDE
-#define CMD_ENTRIES 7
+#define CMD_ENTRIES 8
 
 extern cmd_entry_t cmd_entries[CMD_ENTRIES];
 
