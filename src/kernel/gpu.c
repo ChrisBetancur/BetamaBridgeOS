@@ -9,7 +9,6 @@ static void write_pixel(uint32_t x, uint32_t y, const pixel_t * pix) {
     memcpy(location, pix, BYTES_PER_PIXEL);
 }
 
-
 void gpu_putc(char c) {
     uint8_t w,h;
     uint8_t mask;
